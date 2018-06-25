@@ -18,7 +18,7 @@
 #include <util/platform.h>
 
 #include <assert.h>
-
+#include <stdint.h>
 #include "media.h"
 #include "closest-format.h"
 
@@ -404,6 +404,8 @@ static void mp_media_calc_next_ns(mp_media_t *m)
 
 static bool mp_media_reset(mp_media_t *m)
 {
+	int64_t next_ts = mp_media_get_base_pts(m);
+	int64_t offset = next_ts - m->next_pts_ns;
 	AVStream *stream = m->fmt->streams[0];
 	int64_t seek_pos;
 	int seek_flags;
@@ -435,8 +437,7 @@ static bool mp_media_reset(mp_media_t *m)
 	if (m->has_audio && m->is_local_file)
 		mp_decode_flush(&m->a);
 
-	int64_t next_ts = mp_media_get_base_pts(m);
-	int64_t offset = next_ts - m->next_pts_ns;
+	
 
 	m->eof = false;
 	m->base_ts += next_ts;

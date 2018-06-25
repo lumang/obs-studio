@@ -334,13 +334,14 @@ static void log_security_products(void)
 	 * iid only exists on Windows 8 or higher. */
 
 	h_wsc = LoadLibraryW(L"wscapi.dll");
-	if (!h_wsc)
-		return;
-
 	const CLSID *prod_list_clsid =
 		(const CLSID *)GetProcAddress(h_wsc, "CLSID_WSCProductList");
 	const IID *prod_list_iid =
 		(const IID *)GetProcAddress(h_wsc, "IID_IWSCProductList");
+	if (!h_wsc)
+		return;
+
+	
 
 	if (prod_list_clsid && prod_list_iid) {
 		blog(LOG_INFO, "Sec. Software Status:");

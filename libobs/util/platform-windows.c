@@ -1031,11 +1031,11 @@ uint64_t os_get_proc_virtual_size(void)
 
 uint64_t os_get_free_disk_space(const char *dir)
 {
+	ULARGE_INTEGER free;
 	wchar_t *wdir = NULL;
 	if (!os_utf8_to_wcs_ptr(dir, 0, &wdir))
 		return 0;
 
-	ULARGE_INTEGER free;
 	bool success = !!GetDiskFreeSpaceExW(wdir, &free, NULL, NULL);
 	bfree(wdir);
 

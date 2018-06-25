@@ -163,6 +163,7 @@ static void init_hashmap(profile_times_table *map, size_t size)
 
 static void migrate_old_entries(profile_times_table *map, bool limit_items)
 {
+	profile_times_table_entry *entry;
 	if (!map->old_entries)
 		return;
 
@@ -176,8 +177,7 @@ static void migrate_old_entries(profile_times_table *map, bool limit_items)
 		if (!map->old_occupied)
 			return;
 
-		profile_times_table_entry *entry =
-			&map->old_entries[map->old_start_index];
+			entry = &map->old_entries[map->old_start_index];
 		if (!entry->probes)
 			continue;
 
@@ -367,9 +367,6 @@ static void merge_context(profile_call *context)
 
 void profile_start(const char *name)
 {
-	if (!thread_enabled)
-		return;
-
 	profile_call new_call = {
 		.name = name,
 #ifdef TRACK_OVERHEAD
@@ -379,6 +376,9 @@ void profile_start(const char *name)
 	};
 
 	profile_call *call = NULL;
+
+	if (!thread_enabled)
+		return;
 
 	if (new_call.parent) {
 		size_t idx = da_push_back(new_call.parent->children, &new_call);
@@ -394,11 +394,11 @@ void profile_start(const char *name)
 
 void profile_end(const char *name)
 {
+	profile_call *call = thread_context;
 	uint64_t end = os_gettime_ns();
 	if (!thread_enabled)
 		return;
 
-	profile_call *call = thread_context;
 	if (!call) {
 		blog(LOG_ERROR, "Called profile end with no active profile");
 		return;
@@ -617,6 +617,7 @@ static void gather_stats_between(profiler_time_entries_t *entries,
 		uint64_t min_, uint64_t max_, uint64_t *median,
 		double *percent, double *lower, double *higher)
 {
+	uint64_t accu = 0;
 	*median = 0;
 	*percent = 0.;
 	*lower = 0.;
@@ -625,7 +626,6 @@ static void gather_stats_between(profiler_time_entries_t *entries,
 	if (!entries->num)
 		return;
 
-	uint64_t accu = 0;
 	for (size_t i = 0; i < entries->num; i++) {
 		accu += entries->array[i].count;
 		if (accu < calls * 0.5)
@@ -683,18 +683,18 @@ static void profile_print_entry_expected(profiler_snapshot_entry_t *entry,
 		unsigned indent, uint64_t active, uint64_t parent_calls)
 {
 	UNUSED_PARAMETER(parent_calls);
-
-	if (!entry->expected_time_between_calls)
-		return;
-
 	uint64_t expected_time = entry->expected_time_between_calls;
-
 	uint64_t min_ = entry->min_time_between_calls;
 	uint64_t max_ = entry->max_time_between_calls;
 	uint64_t median = 0;
 	double percent = 0.;
 	double lower = 0.;
 	double higher = 0.;
+	if (!entry->expected_time_between_calls)
+		return;
+
+
+	
 	gather_stats_between(&entry->times_between_calls,
 			entry->overall_between_calls_count,
 			(uint64_t)(expected_time * 0.98),
@@ -759,10 +759,10 @@ void profiler_print_time_between_calls(profiler_snapshot_t *snap)
 
 static void free_call_children(profile_call *call)
 {
+	const size_t num = call->children.num;
 	if (!call)
 		return;
 
-	const size_t num = call->children.num;
 	for (size_t i = 0; i < num; i++)
 		free_call_children(&call->children.array[i]);
 

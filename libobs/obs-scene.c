@@ -470,12 +470,13 @@ static inline void render_item(struct obs_scene_item *item)
 	if (item->item_render) {
 		uint32_t width  = obs_source_get_width(item->source);
 		uint32_t height = obs_source_get_height(item->source);
+		uint32_t cx = calc_cx(item, width);
+		uint32_t cy = calc_cy(item, height);
 
 		if (!width || !height)
 			return;
 
-		uint32_t cx = calc_cx(item, width);
-		uint32_t cy = calc_cy(item, height);
+		
 
 		if (cx && cy && gs_texrender_begin(item->item_render, cx, cy)) {
 			float cx_scale = (float)width  / (float)cx;
@@ -2274,10 +2275,12 @@ static void get_ungrouped_transform(obs_sceneitem_t *group,
 static void remove_group_transform(obs_sceneitem_t *item)
 {
 	obs_scene_t *parent = item->parent;
+
+	obs_sceneitem_t *group = parent->group_sceneitem;
+
 	if (!parent || !parent->group_sceneitem)
 		return;
 
-	obs_sceneitem_t *group = parent->group_sceneitem;
 	get_ungrouped_transform(group, &item->pos, &item->scale, &item->rot);
 
 	update_item_transform(item);
@@ -2503,13 +2506,15 @@ obs_scene_t *obs_sceneitem_group_get_scene(const obs_sceneitem_t *item)
 
 void obs_sceneitem_group_ungroup(obs_sceneitem_t *item)
 {
-	if (!item || !item->is_group)
-		return;
-
+	
 	obs_scene_t *scene = item->parent;
 	obs_scene_t *subscene = item->source->context.data;
 	obs_sceneitem_t *first;
 	obs_sceneitem_t *last;
+
+	if (!item || !item->is_group)
+		return;
+
 
 	/* ------------------------- */
 
@@ -2554,12 +2559,13 @@ void obs_sceneitem_group_ungroup(obs_sceneitem_t *item)
 
 void obs_sceneitem_group_add_item(obs_sceneitem_t *group, obs_sceneitem_t *item)
 {
-	if (!group || !group->is_group || !item)
-		return;
-
+	
 	obs_scene_t *scene = group->parent;
 	obs_scene_t *groupscene = group->source->context.data;
 	obs_sceneitem_t *last;
+
+	if (!group || !group->is_group || !item)
+		return;
 
 	if (item->parent != scene)
 		return;
@@ -2598,15 +2604,18 @@ void obs_sceneitem_group_add_item(obs_sceneitem_t *group, obs_sceneitem_t *item)
 
 void obs_sceneitem_group_remove_item(obs_sceneitem_t *item)
 {
+	
+	obs_scene_t *groupscene = item->parent;
+	obs_sceneitem_t *groupitem = groupscene->group_sceneitem;
+	obs_scene_t *scene = groupitem->parent;
+
 	if (!item)
 		return;
 
-	obs_scene_t *groupscene = item->parent;
-	obs_sceneitem_t *groupitem = groupscene->group_sceneitem;
 	if (!groupitem)
 		return;
 
-	obs_scene_t *scene = groupitem->parent;
+
 
 	/* ------------------------- */
 
@@ -2801,10 +2810,11 @@ void obs_sceneitem_group_enum_items(obs_sceneitem_t *group,
 		bool (*callback)(obs_scene_t*, obs_sceneitem_t*, void*),
 		void *param)
 {
+	obs_scene_t *scene = obs_scene_from_source(group->source);
+
 	if (!group)
 		return;
 
-	obs_scene_t *scene = obs_scene_from_source(group->source);
 	if (scene)
 		obs_scene_enum_items(scene, callback, param);
 }

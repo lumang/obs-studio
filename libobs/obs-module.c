@@ -120,14 +120,16 @@ int obs_open_module(obs_module_t **module, const char *path,
 
 bool obs_init_module(obs_module_t *module)
 {
+	const char *profile_name =
+		profile_store_name(obs_get_profiler_name_store(),
+		"obs_init_module(%s)", module->file);
+
 	if (!module || !obs)
 		return false;
 	if (module->loaded)
 		return true;
 
-	const char *profile_name =
-		profile_store_name(obs_get_profiler_name_store(),
-				"obs_init_module(%s)", module->file);
+	
 	profile_start(profile_name);
 
 	module->loaded = module->load();
